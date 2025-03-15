@@ -5,18 +5,79 @@ import "./AutorizationStyle.css";
 const LoginForm = () => {
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
+  const [position, setPosition] = useState("");
+  const [showPopup, setShowPopup] = useState(false);
 
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    //e.preventDefault();
-    console.log("Login:", login, "Password:", password);
-    navigate("/chat");
+  const tryAutorize = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("http://localhost/Common_Chat/AutorizationPHP.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ login, password })
+      });
+
+      const data = await response.json();
+      console.log("Ответ от сервера:", data);
+
+      if (data.exists === false) {
+        setShowPopup(true);
+      } else {
+        navigate("/chat");
+      }
+    } catch (error) {
+      console.log("Ошибка:", error);
+    }
+  };
+
+  const tryAddUser = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("http://localhost/Common_Chat/RegistrationPHP.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ login, password, position })
+      });
+
+      const data = await response.json();
+      console.log("Ответ от сервера (регистрация):", data);
+
+      if(data.exists === true){
+        navigate("/chat");
+      }
+    } catch (error) {
+      console.log("Ошибка:", error);
+    }
   };
 
   return (
     <div className="FormTaker">
-      <form onSubmit={handleSubmit}>
+      {showPopup && (
+        <div className="popup-overlay">
+          <div className="popup">
+            <p>Похоже, вы новенький, нужно узнать вашу роль.</p>
+            <form onSubmit={tryAddUser}>
+              <input
+                type="text"
+                id="position"
+                name="position"
+                required
+                value={position}
+                onChange={(e) => setPosition(e.target.value)}
+              />
+              <button type="submit">Войти</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={tryAutorize}>
         <div className="input-container">
           <label htmlFor="login">Login</label>
           <input
