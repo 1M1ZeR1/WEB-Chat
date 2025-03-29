@@ -1,42 +1,102 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "./ChatPageStyle.css";
 
 const ChatPage = () => {
   const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
-  const handleSend = (e) => {
+  const fetchMessages = async () => {
+    try {
+      const response = await fetch("http://localhost/Common_Chat/GetMessagesPHP.php", {
+        method: "GET",
+        credentials: "include",
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setMessages(data.messages.reverse());
+        setCurrentUserId(data.currentUserId);
+      }
+    } catch (error) {
+      console.error("Ошибка загрузки сообщений:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSend = async (e) => {
     e.preventDefault();
-    console.log("Отправка сообщения:", message);
-    setMessage("");
+    
+    const now = new Date();
+    const messageTime = 
+      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ` +
+      `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+    const messageData = {
+      messageText: message,
+      messageTime: messageTime,
+    };
+
+    try {
+      const response = await fetch("http://localhost/Common_Chat/ChatMessagesPHP.php", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(messageData),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.error || "Ошибка сервера");
+      if (data.success) {
+        setMessage("");
+        fetchMessages();
+      }
+    } catch (error) {
+      console.error("Ошибка:", error.message);
+    }
+  };
+
+  const formatTime = (datetime) => {
+    const date = new Date(datetime);
+    return date.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true
+    });
   };
 
   return (
     <div className="chat-container">
       <div className="chat-header">
         <h2>Team Unicorns</h2>
-        <span className="date">8/20/2020</span>
+        <span className="date">{new Date().toLocaleDateString()}</span>
       </div>
+      
       <div className="chat-messages">
-        <div className="chat-message sent">
-          <p>
-            <strong>Test message</strong> 👋{" "}
-            <span className="time">00:00 AM</span>
-          </p>
-        </div>
-        <div className="chat-message sent">
-          <p>
-            <strong>Test message 2</strong>{" "}
-            <span className="time">1:31 AM</span>
-          </p>
-        </div>
-        <div className="chat-message received">
-          <p>
-            <strong>Ivan</strong> Dev <br />
-            Test message??{" "}
-            <span className="time">11:00 AM</span>
-          </p>
-        </div>
+        {messages.map((msg) => (
+          <div 
+            key={msg.message_id}
+            className={`chat-message ${msg.user_id === currentUserId ? 'sent' : 'received'}`}
+          >
+            <p>
+              {msg.user_id !== currentUserId && (
+                <strong>{msg.username}</strong>
+              )}
+              {msg.message_text}
+              <span className="time">{formatTime(msg.message_time)}</span>
+            </p>
+          </div>
+        ))}
       </div>
+
       <div className="message-input">
         <form onSubmit={handleSend}>
           <input

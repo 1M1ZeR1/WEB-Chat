@@ -1,14 +1,17 @@
 <?php
+session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
+
 header("Content-Type: application/json");
 
 $host = "localhost";
@@ -17,8 +20,6 @@ $username = "root";
 $password = "Paha91lot151010";
 
 $rawData = file_get_contents("php://input");
-file_put_contents("debug.log", date('Y-m-d H:i:s') . " " . $rawData . PHP_EOL, FILE_APPEND);
-
 $data = json_decode($rawData, true);
 
 if (!$data) {
@@ -31,29 +32,28 @@ if (isset($data["login"]) && !empty($data["login"])) {
     $login = $data["login"];
     $userPassword = $data["password"];
     $position = $data["position"];
-
     $hashedPassword = password_hash($userPassword, PASSWORD_DEFAULT);
-
     try {
         $pdo = new PDO("mysql:host=$host;port=3308;dbname=$dbname;charset=utf8", $username, $password);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
         $stmt = $pdo->prepare("INSERT INTO users (username, password, position) VALUES (:login, :userPassword, :position)");
         $stmt->bindParam(":login", $login, PDO::PARAM_STR);
         $stmt->bindParam(":userPassword", $hashedPassword, PDO::PARAM_STR);
         $stmt->bindParam(":position", $position, PDO::PARAM_STR);
-
         if ($stmt->execute()) {
-            echo json_encode(["success" => true, "message" => "Пользователь добавлен"]);
+            $userId = $pdo->lastInsertId();
+            $_SESSION["user"] = [
+                "id"       => $userId,
+                "login"    => $login,
+                "position" => $position
+            ];
+            echo json_encode(["success" => true, "message" => "Пользователь добавлен", "redirect" => "chat.php"]);
         } else {
             echo json_encode(["success" => false, "message" => "Ошибка при добавлении пользователя"]);
         }
     } catch (PDOException $e) {
         http_response_code(500);
-        echo json_encode([
-            "error" => "Ошибка подключения к базе данных или выполнения запроса",
-            "pdo_error" => $e->getMessage()
-        ]);
+        echo json_encode(["error" => "Ошибка подключения к базе данных или выполнения запроса", "pdo_error" => $e->getMessage()]);
     }
 } else {
     http_response_code(400);

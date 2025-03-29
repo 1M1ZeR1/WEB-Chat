@@ -16,23 +16,34 @@ const LoginForm = () => {
       const response = await fetch("http://localhost/Common_Chat/AutorizationPHP.php", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ login, password })
+        credentials: 'include',
+        body: JSON.stringify({ login, password }),
       });
-
-      const data = await response.json();
+  
+      const text = await response.text();
+      console.log("Полученный текст ответа:", text);
+  
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (jsonError) {
+        console.error("Ошибка парсинга JSON:", jsonError, text);
+        return;
+      }
+  
       console.log("Ответ от сервера:", data);
-
-      if (data.exists === false) {
-        setShowPopup(true);
-      } else {
+      if (data.success) {
         navigate("/chat");
+      } else {
+        setShowPopup(true);
       }
     } catch (error) {
       console.log("Ошибка:", error);
     }
   };
+  
 
   const tryAddUser = async (e) => {
     e.preventDefault();
@@ -40,16 +51,17 @@ const LoginForm = () => {
       const response = await fetch("http://localhost/Common_Chat/RegistrationPHP.php", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ login, password, position })
+        credentials: 'include',
+        body: JSON.stringify({ login, password, position }),
       });
-
       const data = await response.json();
       console.log("Ответ от сервера (регистрация):", data);
-
-      if(data.exists === true){
+      if (data.success === true) {
         navigate("/chat");
+      } else {
+        console.log("Ошибка регистрации:", data.message);
       }
     } catch (error) {
       console.log("Ошибка:", error);
@@ -76,7 +88,6 @@ const LoginForm = () => {
           </div>
         </div>
       )}
-
       <form onSubmit={tryAutorize}>
         <div className="input-container">
           <label htmlFor="login">Login</label>
