@@ -43,12 +43,12 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     $stmt = $pdo->prepare("
-        SELECT m.message_id, m.message_text, m.message_time, u.username 
-        FROM messages m
-        JOIN users u ON m.user_id = u.`index`
-        ORDER BY m.message_time DESC
-        LIMIT 50
-    ");
+    SELECT m.message_id, m.message_text, m.message_time, m.user_id, u.username 
+    FROM messages m
+    JOIN users u ON m.user_id = u.`index`
+    ORDER BY m.message_time DESC
+    LIMIT 50
+");
     $stmt->execute();
     
     $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);

@@ -16,12 +16,13 @@ const ChatPage = () => {
       const data = await response.json();
       if (data.success) {
         setMessages(data.messages.reverse());
-        setCurrentUserId(data.currentUserId);
+        setCurrentUserId(Number(data.currentUserId));
       }
     } catch (error) {
       console.error("Ошибка загрузки сообщений:", error);
     }
   };
+  
 
   useEffect(() => {
     fetchMessages();
