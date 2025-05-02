@@ -1,10 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import "./ChatPageStyle.css";
 
 const ChatPage = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const messagesEndRef = useRef(null); 
+
+  const navigate = useNavigate();
 
   const fetchMessages = async () => {
     try {
@@ -12,7 +16,7 @@ const ChatPage = () => {
         method: "GET",
         credentials: "include",
       });
-      
+
       const data = await response.json();
       if (data.success) {
         setMessages(data.messages.reverse());
@@ -22,19 +26,20 @@ const ChatPage = () => {
       console.error("Ошибка загрузки сообщений:", error);
     }
   };
-  
 
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(fetchMessages, 2000);
-    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSend = async (e) => {
     e.preventDefault();
-    
+
     const now = new Date();
-    const messageTime = 
+    const messageTime =
       `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ` +
       `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
@@ -52,9 +57,9 @@ const ChatPage = () => {
         },
         body: JSON.stringify(messageData),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) throw new Error(data.error || "Ошибка сервера");
       if (data.success) {
         setMessage("");
@@ -67,35 +72,63 @@ const ChatPage = () => {
 
   const formatTime = (datetime) => {
     const date = new Date(datetime);
-    return date.toLocaleTimeString([], { 
-      hour: '2-digit', 
+    return date.toLocaleString([], {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true
+      hour12: false
     });
   };
 
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("http://localhost/Common_Chat/LogoutPHP.php", {
+        method: "POST", 
+        credentials: "include",
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+  
+      const data = await response.json();
+  
+      console.log(data.success);
+      if (data.success) {
+        navigate("/")
+      } 
+    } catch (error) {
+      console.error("Ошибка при выходе:", error);
+    }
+  };
+  
   return (
     <div className="chat-container">
       <div className="chat-header">
-        <h2>Team Unicorns</h2>
-        <span className="date">{new Date().toLocaleDateString()}</span>
-      </div>
-      
+  <button className="logout-button" onClick={handleLogout}>Выйти</button>
+  <h2>Team Unicorns</h2>
+  <span className="date">{new Date().toLocaleDateString()}</span>
+</div>
       <div className="chat-messages">
         {messages.map((msg) => (
-          <div 
+          <div
             key={msg.message_id}
             className={`chat-message ${msg.user_id === currentUserId ? 'sent' : 'received'}`}
           >
             <p>
               {msg.user_id !== currentUserId && (
-                <strong>{msg.username}</strong>
+                <>
+                  <strong>{msg.username}</strong>&nbsp;&nbsp;&nbsp;<strong>{msg.position}</strong>
+                  <br />
+                </>
               )}
               {msg.message_text}
               <span className="time">{formatTime(msg.message_time)}</span>
             </p>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="message-input">

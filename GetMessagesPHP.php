@@ -43,7 +43,7 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     $stmt = $pdo->prepare("
-    SELECT m.message_id, m.message_text, m.message_time, m.user_id, u.username 
+    SELECT m.message_id, m.message_text, m.message_time, m.user_id, u.username, u.position
     FROM messages m
     JOIN users u ON m.user_id = u.`index`
     ORDER BY m.message_time DESC

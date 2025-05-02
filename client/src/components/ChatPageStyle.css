@@ -20,13 +20,35 @@ body {
   }
   
   .chat-header {
+    position: relative;
     border-bottom: 1px solid #ddd;
     padding: 10px 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
   }
+  
+  .logout-button {
+    all: unset;
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #555;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 8px;
+    transition: color 0.2s;
+  }
+  
+  .logout-button:hover {
+    color: #000;
+    text-decoration: underline;
+  }
+  .logout-button:focus {
+    outline: none;
+    background: none;
+  } 
   
   .chat-header h2 {
     margin: 0;
@@ -35,9 +57,12 @@ body {
   .chat-header .date {
     position: absolute;
     right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
     font-size: 0.8em;
     color: #999;
   }
+  
   
   .chat-messages {
     flex: 1;
@@ -46,6 +71,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    min-width: 120px;
   }
   
   .chat-message {
@@ -53,6 +79,7 @@ body {
     border-radius: 8px;
     max-width: 60%;
     position: relative;
+    min-width: 120px;
   }
   
   .chat-message.sent {
@@ -82,30 +109,46 @@ body {
   }
   
   .message-input {
-    border-top: 1px solid #ddd;
-    padding: 10px;
+    border-top: 1px solid #eee;
+  }
+  
+  .message-input form {
+    display: flex;
+    align-items: center;
+    background-color: #f9f9f9;
   }
   
   .message-input input {
     flex: 1;
+    border: none;
+    outline: none;
     padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    font-size: 14px;
+    background: transparent;
+    color: #333;
+  }
+  
+  .message-input input::placeholder {
+    color: #aaa;
   }
   
   .message-input button {
-    padding: 10px 20px;
-    margin-left: 10px;
-    background-color: #007BFF;
-    color: #fff;
+    background: none;
     border: none;
-    border-radius: 4px;
+    padding: 5px;
+    margin-left: 10px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #777;
+    transition: color 0.2s ease;
   }
   
   .message-input button:hover {
-    background-color: #0056b3;
+    color: #007BFF;
   }
+  
   .chat-message {
     margin-bottom: 15px;
     padding: 10px;

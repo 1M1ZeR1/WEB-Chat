@@ -6,7 +6,6 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <h1>WEB-Chat</h1>
         <Routes>
           <Route path="/" element={<LoginForm />} />
           <Route path="/chat" element={<ChatPage />} />
