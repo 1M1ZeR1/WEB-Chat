@@ -7,13 +7,12 @@ const LoginForm = () => {
   const [password, setPassword] = useState("");
   const [position, setPosition] = useState("");
   const [showPopup, setShowPopup] = useState(false);
-
   const navigate = useNavigate();
 
   const tryAutorize = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost/Common_Chat/AutorizationPHP.php", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/Common_Chat/AutorizationPHP.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -21,34 +20,35 @@ const LoginForm = () => {
         credentials: 'include',
         body: JSON.stringify({ login, password }),
       });
-  
-      const text = await response.text();
-      console.log("Полученный текст ответа:", text);
-  
+
+      const contentType = response.headers.get("content-type");
       let data;
-      try {
-        data = JSON.parse(text);
-      } catch (jsonError) {
-        console.error("Ошибка парсинга JSON:", jsonError, text);
-        return;
+      
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        throw new Error(`Ожидался JSON, получено: ${text}`);
       }
-  
+
       console.log("Ответ от сервера:", data);
+      
       if (data.success) {
+        document.cookie = `PHPSESSID=${data.session_id || ''}; path=/; domain=.web-chat-tca4.vercel.app; secure; samesite=none`;
         navigate("/chat");
       } else {
         setShowPopup(true);
       }
     } catch (error) {
-      console.log("Ошибка:", error);
+      console.error("Ошибка авторизации:", error);
+      setShowPopup(true);
     }
   };
-  
 
   const tryAddUser = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("http://localhost/Common_Chat/RegistrationPHP.php", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/Common_Chat/RegistrationPHP.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -56,15 +56,16 @@ const LoginForm = () => {
         credentials: 'include',
         body: JSON.stringify({ login, password, position }),
       });
+      
       const data = await response.json();
       console.log("Ответ от сервера (регистрация):", data);
-      if (data.success === true) {
+      
+      if (data.success) {
+        document.cookie = `PHPSESSID=${data.session_id || ''}; path=/; domain=.web-chat-tca4.vercel.app; secure; samesite=none`;
         navigate("/chat");
-      } else {
-        console.log("Ошибка регистрации:", data.message);
       }
     } catch (error) {
-      console.log("Ошибка:", error);
+      console.error("Ошибка регистрации:", error);
     }
   };
 
@@ -82,15 +83,16 @@ const LoginForm = () => {
                 required
                 value={position}
                 onChange={(e) => setPosition(e.target.value)}
+                placeholder="Ваша должность"
               />
-              <button type="submit">Войти</button>
+              <button type="submit">Зарегистрироваться</button>
             </form>
           </div>
         </div>
       )}
       <form onSubmit={tryAutorize}>
         <div className="input-container">
-          <label htmlFor="login">Login</label>
+          <label htmlFor="login">Логин</label>
           <input
             type="text"
             id="login"
@@ -98,10 +100,11 @@ const LoginForm = () => {
             required
             value={login}
             onChange={(e) => setLogin(e.target.value)}
+            placeholder="Введите логин"
           />
         </div>
         <div className="input-container">
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">Пароль</label>
           <input
             type="password"
             id="password"
@@ -109,9 +112,10 @@ const LoginForm = () => {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            placeholder="Введите пароль"
           />
         </div>
-        <button type="submit">Login</button>
+        <button type="submit">Войти</button>
       </form>
     </div>
   );

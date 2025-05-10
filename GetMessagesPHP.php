@@ -1,36 +1,30 @@
 <?php
-// Настройки сессии (должны быть идентичными auth.php)
 session_set_cookie_params([
     'lifetime' => 86400,
     'path' => '/',
-    'domain' => '',
-    'secure' => false,
+    'domain' => '.web-chat-tca4.vercel.app',
+    'secure' => true,
     'httponly' => true,
-    'samesite' => 'Lax'
+    'samesite' => 'None'
 ]);
 session_start();
 
-// Настройки CORS
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Origin: https://web-chat-tca4.vercel.app");
 header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
-// Обработка OPTIONS запроса
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
-// Проверка авторизации
 if (!isset($_SESSION['user'])) {
     http_response_code(401);
     echo json_encode(["error" => "Unauthorized"]);
     exit();
 }
 
-// Подключение к БД
 $host = "localhost";
 $dbname = "web-chat";
 $username = "root";

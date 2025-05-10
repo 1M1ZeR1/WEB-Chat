@@ -1,19 +1,18 @@
 <?php
 session_set_cookie_params([
-    'lifetime' => 0,
+    'lifetime' => 86400,
     'path' => '/',
-    'domain' => 'localhost',
-    'secure' => false,
+    'domain' => '.web-chat-tca4.vercel.app',
+    'secure' => true,
     'httponly' => true,
     'samesite' => 'None'
 ]);
 session_start();
 
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: http://localhost:3000");
+header("Access-Control-Allow-Origin: https://web-chat-tca4.vercel.app");
 header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -52,21 +51,14 @@ try {
     
     $messageTime = date("Y-m-d H:i:s", strtotime($data['messageTime']));
     
-    $stmt = $pdo->prepare("
-        INSERT INTO messages (user_id, message_text, message_time) 
-        VALUES (:user_id, :message_text, :message_time)
-    ");
-    
+    $stmt = $pdo->prepare("INSERT INTO messages (user_id, message_text, message_time) VALUES (:user_id, :message_text, :message_time)");
     $stmt->execute([
         ':user_id' => $_SESSION['user']['id'],
         ':message_text' => $data['messageText'],
         ':message_time' => $messageTime
     ]);
     
-    echo json_encode([
-        "success" => true,
-        "messageId" => $pdo->lastInsertId()
-    ]);
+    echo json_encode(["success" => true, "messageId" => $pdo->lastInsertId()]);
     
 } catch (PDOException $e) {
     http_response_code(500);

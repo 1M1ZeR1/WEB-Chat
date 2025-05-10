@@ -2,20 +2,31 @@
 session_set_cookie_params([
     'lifetime' => 0,
     'path' => '/',
-    'domain' => 'localhost',
-    'secure' => false,
+    'domain' => '.web-chat-tca4.vercel.app',
+    'secure' => true,
     'httponly' => true,
     'samesite' => 'None'
 ]);
-
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: http://localhost:3000");
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-
 session_start();
-session_unset(); 
-session_destroy(); 
+
+header("Access-Control-Allow-Origin: https://web-chat-tca4.vercel.app");
+header("Access-Control-Allow-Credentials: true");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+$_SESSION = [];
+if (ini_get("session.use_cookies")) {
+    $params = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000,
+        $params["path"], $params["domain"],
+        $params["secure"], $params["httponly"]
+    );
+}
+session_destroy();
 echo json_encode(["success" => true]);
 ?>
