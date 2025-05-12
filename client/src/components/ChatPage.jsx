@@ -11,19 +11,18 @@ const ChatPage = () => {
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/Common_Chat/GetMessagesPHP.php`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/Common_Chat/GetMessagesPHP.php`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
       if (response.status === 401) {
         navigate("/");
         return;
       }
-
       const data = await response.json();
       if (data.success) {
         setMessages(data.messages.reverse());
@@ -42,7 +41,7 @@ const ChatPage = () => {
   useEffect(() => {
     const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
-  },[]);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -51,23 +50,21 @@ const ChatPage = () => {
   const handleSend = async (e) => {
     e.preventDefault();
     if (!message.trim()) return;
-
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/Common_Chat/ChatMessagesPHP.php`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messageText: message,
-          messageTime: new Date().toISOString(),
-        }),
-      });
-
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/Common_Chat/ChatMessagesPHP.php`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messageText: message,
+            messageTime: new Date().toISOString(),
+          }),
+        }
+      );
       const data = await response.json();
       if (!data.success) throw new Error(data.error || "Ошибка отправки");
-      
       setMessage("");
       await fetchMessages();
     } catch (error) {
@@ -80,14 +77,17 @@ const ChatPage = () => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/Common_Chat/LogoutPHP.php`, {
-        method: "POST",
-        credentials: "include",
-      });
-
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/Common_Chat/LogoutPHP.php`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
       const data = await response.json();
       if (data.success) {
-        document.cookie = "PHPSESSID=; path=/; domain=.web-chat-tca4.vercel.app; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie =
+          "PHPSESSID=; path=/; domain=.web-chat-tca4.vercel.app; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         navigate("/");
       }
     } catch (error) {
@@ -95,11 +95,26 @@ const ChatPage = () => {
     }
   };
 
-  const formatTime = (datetime) => {
-    return new Date(datetime).toLocaleTimeString([], {
+  const formatDateTime = (datetime) => {
+    const date = new Date(datetime);
+    const now = new Date();
+    const isToday =
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate();
+    const time = date.toLocaleTimeString("ru-RU", {
       hour: "2-digit",
       minute: "2-digit",
     });
+    if (isToday) {
+      return time;
+    } else {
+      const dayMonth = date.toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "long",
+      });
+      return `${dayMonth}, ${time}`;
+    }
   };
 
   return (
@@ -111,7 +126,6 @@ const ChatPage = () => {
         <h2>Team Unicorns</h2>
         <span className="date">{new Date().toLocaleDateString()}</span>
       </div>
-
       <div className="chat-messages">
         {messages.map((msg) => (
           <div
@@ -123,20 +137,20 @@ const ChatPage = () => {
             <div className="message-content">
               {msg.user_id !== currentUserId && (
                 <div className="message-info">
-                  <span className="username">{msg.username}</span>
-                  <span className="position">{msg.position}</span>
+                  <span className="name-position">
+                    {msg.username} — {msg.position}
+                  </span>
                 </div>
               )}
               <div className="message-text">{msg.message_text}</div>
-              <div className="message-time">
-                {formatTime(msg.message_time)}
+              <div className="message-meta">
+                {formatDateTime(msg.message_time)}
               </div>
             </div>
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
-
       <form className="message-input" onSubmit={handleSend}>
         <input
           type="text"

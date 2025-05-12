@@ -1,6 +1,5 @@
 <?php
-// Динамически разрешаем запросы от локального или продакшн-домена
-$allowedOrigins = ['https://web-chat-tca4.vercel.app', 'http://localhost:3000'];
+$allowedOrigins = ['https://web-chat-tca4.vercel.app','http://localhost:80'];
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
 if (in_array($origin, $allowedOrigins)) {
@@ -14,25 +13,43 @@ header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Content-Type: application/json");
 
-// Обработка preflight (OPTIONS) запроса
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(204);
     exit();
 }
 
-// Настройка параметров куки для авторизации
-session_set_cookie_params([
-    'lifetime' => 86400,
-    'path' => '/',
-    'domain' => parse_url($origin, PHP_URL_HOST) ?? 'web-chat-tca4.vercel.app',
-    'secure' => true,
-    'httponly' => true,
-    'samesite' => 'None'
-]);
+define('COOKIE_SECRET', '12345678');
 
-session_start();
+function setSecureCookie($name, $data, $expire = 86400) {
+    $data['timestamp'] = time();
+    $data['signature'] = hash_hmac('sha256', json_encode($data), COOKIE_SECRET);
+    
+    setcookie(
+        $name,
+        json_encode($data),
+        [
+            'expires' => time() + $expire,
+            'path' => '/',
+            'domain' => '',
+            'secure' => true, 
+            'httponly' => true,
+            'samesite' => 'None' 
+        ]
+    );
+}
 
-// Получение данных запроса
+function verifyCookie($name) {
+    if (!isset($_COOKIE[$name])) return false;
+    
+    $data = json_decode($_COOKIE[$name], true);
+    if (!isset($data['signature'])) return false;
+    
+    $signature = $data['signature'];
+    unset($data['signature']);
+    
+    return hash_hmac('sha256', json_encode($data), COOKIE_SECRET) === $signature;
+}
+
 $rawData = file_get_contents("php://input");
 $data = json_decode($rawData, true);
 
@@ -42,7 +59,6 @@ if (!$data || !isset($data["login"], $data["password"])) {
     exit();
 }
 
-// Подключение к базе данных
 $host = "localhost";
 $dbname = "web-chat";
 $db_username = "root";
@@ -60,27 +76,24 @@ try {
     
     if ($user) {
         if (password_verify($data["password"], $user["password"])) {
-            $_SESSION["user"] = [
-                "id" => $user["id"],
-                "login" => $user["username"],
-                "position" => $user["position"]
-            ];
+            error_log($user['id']);
+            error_log($user['username']);
+            error_log($user['position']);
+            setSecureCookie('UserAuth', [
+                'id' => $user['id'],
+                'login' => $user['username'],
+                'position' => $user['position']
+            ]);
             
-            // Устанавливаем куки
-            setcookie(
-                session_name(), 
-                session_id(), 
-                [
-                    'expires' => time() + 86400,
-                    'path' => '/',
-                    'domain' => parse_url($origin, PHP_URL_HOST) ?? 'web-chat-tca4.vercel.app',
-                    'secure' => true,
-                    'httponly' => true,
-                    'samesite' => 'None'
+            echo json_encode([
+                "success" => true,
+                "message" => "Авторизация успешна",
+                "user" => [
+                    "id" => $user['id'],
+                    "login" => $user['username'],
+                    "position" => $user['position']
                 ]
-            );
-
-            echo json_encode(["success" => true, "message" => "Авторизация успешна"]);
+            ]);
         } else {
             http_response_code(401);
             echo json_encode(["error" => "Неверный пароль"]);
