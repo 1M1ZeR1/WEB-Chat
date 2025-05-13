@@ -8,6 +8,7 @@ const ChatPage = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
+  const initialScrollDone = useRef(false);
 
   const fetchMessages = async () => {
     try {
@@ -44,7 +45,10 @@ const ChatPage = () => {
   }, []);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!initialScrollDone.current && messages.length > 0) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      initialScrollDone.current = true;
+    }
   }, [messages]);
 
   const handleSend = async (e) => {

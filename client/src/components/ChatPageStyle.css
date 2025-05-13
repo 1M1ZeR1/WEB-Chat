@@ -166,3 +166,30 @@ body {
     bottom: 5px;
     right: 10px
   }
+@media (max-width: 500px) {
+  .chat-container {
+    min-width: unset;
+    width: 100%;
+    margin: 0 10px;
+  }
+  .chat-header {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+  }
+  .logout-button {
+    position: static;
+    transform: none;
+    margin-bottom: 5px;
+  }
+  .chat-header h2 {
+    margin: 5px 0;
+  }
+  .chat-header .date {
+    position: static;
+    margin-top: 5px;
+    transform: none;
+    font-size: 0.8em;
+  }
+}
