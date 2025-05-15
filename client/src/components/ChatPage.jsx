@@ -4,11 +4,14 @@ import "./ChatPageStyle.css";
 
 const ChatPage = () => {
   const [message, setMessage] = useState("");
+  const [editedMessage_id, setEditedMessage_id] = useState(null);
   const [messages, setMessages] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
   const initialScrollDone = useRef(false);
+  const [inEditMode, setInEditMode] = useState(false);
+
 
   const fetchMessages = async () => {
     try {
@@ -55,7 +58,7 @@ const ChatPage = () => {
     e.preventDefault();
     if (!message.trim()) return;
     try {
-      const response = await fetch(
+        const response = await fetch(
         `${process.env.REACT_APP_API_URL}/Common_Chat/ChatMessagesPHP.php`,
         {
           method: "POST",
@@ -66,11 +69,12 @@ const ChatPage = () => {
             messageTime: new Date().toISOString(),
           }),
         }
-      );
+        );
       const data = await response.json();
       if (!data.success) throw new Error(data.error || "Ошибка отправки");
       setMessage("");
       await fetchMessages();
+      
     } catch (error) {
       console.error("Ошибка отправки:", error);
       if (error.message.includes("Unauthorized")) {
@@ -78,6 +82,36 @@ const ChatPage = () => {
       }
     }
   };
+
+  const editSend = async (e)=>{
+    e.preventDefault();
+    setInEditMode(false);
+    if (!message.trim()) return;
+    try {
+        const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/Common_Chat/EditMessagePHP.php`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message_text: message,
+            message_id: editedMessage_id
+          }),
+        }
+        );
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || "Ошибка отправки");
+      setMessage("");
+      await fetchMessages();
+      
+    } catch (error) {
+      console.error("Ошибка отправки:", error);
+      if (error.message.includes("Unauthorized")) {
+        navigate("/");
+      }
+    }
+  }
 
   const handleLogout = async () => {
     try {
@@ -121,6 +155,40 @@ const ChatPage = () => {
     }
   };
 
+  const handleDelete = async (message_id)=>{
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/Common_Chat/DeleteMessagePHP.php`,
+        {
+          method: "POST",
+          credentials: "include",
+           headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message_id
+          }),
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        await fetchMessages();
+      }
+    } catch (error) {
+      console.error("Ошибка выхода:", error);
+    }
+  }
+
+  const handleEdit = (message_text,message_id)=>{
+    if(inEditMode){
+      setInEditMode(false);
+      setMessage("");
+      return;
+    }
+
+    setEditedMessage_id(message_id);
+    setMessage(message_text);
+    setInEditMode(true);
+  }
+
   return (
     <div className="chat-container">
       <div className="chat-header">
@@ -150,6 +218,12 @@ const ChatPage = () => {
               <div className="message-meta">
                 {formatDateTime(msg.message_time)}
               </div>
+              {msg.user_id === currentUserId && (
+          <div className="message-actions">
+            <button onClick={() => handleEdit(msg.message_text,msg.message_id)}>✏️</button>
+            <button onClick={() => handleDelete(msg.message_id)}>🗑️</button>
+          </div>
+        )}
             </div>
           </div>
         ))}
@@ -163,7 +237,16 @@ const ChatPage = () => {
           onChange={(e) => setMessage(e.target.value)}
           required
         />
-        <button type="submit">Отправить</button>
+        <button type="submit" onClick={(e)=>{
+
+          if(!inEditMode){
+            handleSend(e);
+          }
+          else{
+            editSend(e);
+          }
+        }
+        }>Отправить</button>
       </form>
     </div>
   );
